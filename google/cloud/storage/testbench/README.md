@@ -20,6 +20,12 @@ For more information use: `python3 testbench.py -h`
 
 You can force the following failures by using the `x-goog-testbench-instructions` header.
 
+### connection-reset
+Set request headers with `x-goog-testbench-instructions: connection-reset`.
+Emulator will force a socket-level "connection reset by peer" error.
+Currently supported for object insert and get calls. Note that it will cause the
+Flask server to crash after the error.
+
 ### return-broken-stream
 
 Set request headers with `x-goog-testbench-instructions: return-broken-stream`.

@@ -20,6 +20,9 @@ import hashlib
 import json
 import random
 import re
+import socket
+import struct
+import time
 
 
 def validate_bucket_name(bucket_name):
@@ -411,3 +414,10 @@ def parse_multi_part(request):
     resource = json.loads(resource_body)
 
     return resource, media_headers, media_body
+
+
+def reset_connection(request):
+  client = request.environ["CUSTOM_CONNECTION"]
+  client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
+  client.close()
+  raise BaseException("Forced a connect reset.")

@@ -28,8 +28,18 @@ import re
 import testbench_utils
 import time
 import sys
+import socket
+import struct
 from werkzeug import serving
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.serving import WSGIRequestHandler
+
+
+class ConnectionIncludedHandler(WSGIRequestHandler):
+  def make_environ(self):
+    make_environ = super().make_environ()
+    make_environ["CUSTOM_CONNECTION"] = self.connection
+    return make_environ
 
 
 @httpbin.app.errorhandler(error_response.ErrorResponse)
@@ -557,6 +567,8 @@ def objects_get_common(bucket_name, object_name, revision):
             return flask.Response("Service Unavailable", status=503)
         print("## Return success for %s" % instructions)
         return flask.Response(response_payload, status=200, headers=headers)
+    if instructions == "connection-reset":
+      testbench_utils.reset_connection(flask.request)
 
     response = flask.make_response(response_payload)
     length = len(response_payload)
@@ -757,6 +769,11 @@ def objects_insert(bucket_name):
     ).replace("/upload/", "/")
     insert_magic_bucket(gcs_url)
 
+    # Process custom headers to test error conditions.
+    instructions = flask.request.headers.get("x-goog-testbench-instructions")
+    if instructions == "connection-reset":
+      testbench_utils.reset_connection(flask.request)
+
     upload_type = flask.request.args.get("uploadType")
     if upload_type is None:
         raise error_response.ErrorResponse(
@@ -921,7 +938,9 @@ def main():
         use_reloader=True,
         use_debugger=arguments.debug,
         use_evalex=True,
+        request_handler=ConnectionIncludedHandler,
     )
+
 
 
 if __name__ == "__main__":
